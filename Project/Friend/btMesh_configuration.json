@@ -5,29 +5,31 @@
     "PID": "0xf0b0",
     "VID": "0x1234",
     "CRPL": "0x0020",
-    "Features": "0x000b",
+    "Features": "0x0007",
     "Elements": [
       {
         "Name": "Primary Element",
         "Loc": "0x0000",
-        "NumS": "3",
-        "NumV": "0",
+        "NumS": "2",
+        "NumV": "2",
         "SIG Models": [
           "0x0000",
           "Configuration Server",
-          "0x1001",
-          "Generic OnOff Client",
           "0x1000",
           "Generic OnOff Server"]
         ,
         "Vendor Models": [
-          ]
+          "0x000102FF",
+          "SENSOR_MODEL_1",
+          "0x000202FF",
+          "SENSOR_MODEL_2"]
+        
       }]
     
   },
   "Memory configuration": {
     "MAX_ELEMENTS": "1",
-    "MAX_MODELS": "3",
+    "MAX_MODELS": "4",
     "MAX_APP_BINDS": "4",
     "MAX_SUBSCRIPTIONS": "4",
     "MAX_NETKEYS": "4",
@@ -46,7 +48,7 @@
     "MAX_PROVISIONED_DEVICE_NETKEYS": "0",
     "MAX_PROVISIONED_DEVICE_APPKEYS": "0",
     "MAX_FOUNDATION_CLIENT_CMDS": "0",
-    "MAX_FRIENDSHIPS": "1",
+    "MAX_FRIENDSHIPS": "2",
     "FRIEND_MAX_SUBS_LIST": "5",
     "FRIEND_MAX_TOTAL_CACHE": "5",
     "FRIEND_MAX_SINGLE_CACHE": "5"
