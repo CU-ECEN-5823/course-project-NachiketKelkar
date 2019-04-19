@@ -52,6 +52,7 @@
 #include "src/gpio.h"
 #include "src/log.h"
 #include "mesh_generic_model_capi_types.h"
+#include "mesh_lighting_model_capi_types.h"
 #include "mesh_lib.h"
 /***********************************************************************************************//**
  * @addtogroup Application
@@ -127,6 +128,7 @@ uint16_t primary_elem_addr;
 void data_subscriber_init();
 void init_all_models();
 void onoff_publish();
+errorcode_t onoff_update(uint16_t element_index);
 /**
  * See light switch app.c file definition
  */
@@ -207,17 +209,19 @@ void onoff_request(uint16_t model_id,
 				   uint16_t delay_ms,
 				   uint8_t request_flags)
 {
+//	LOG_INFO("LOC is %d - %d - %d",request->location_global.lat,request->location_global.lon,request->location_global.alt);
 	LOG_INFO("Onoff request received");
-	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
-	{
-		displayPrintf(DISPLAY_ROW_TEMPVALUE,"Button Pressed");
-		gpioLed0SetOn();
-	}
-	else
-	{
-		displayPrintf(DISPLAY_ROW_TEMPVALUE,"Button Released");
-		gpioLed0SetOff();
-	}
+	LOG_INFO("%d",request->level);
+//	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
+//	{
+//		displayPrintf(DISPLAY_ROW_TEMPVALUE,"Button Pressed");
+//		gpioLed0SetOn();
+//	}
+//	else
+//	{
+//		displayPrintf(DISPLAY_ROW_TEMPVALUE,"Button Released");
+//		gpioLed0SetOff();
+//	}
 }
 
 void gecko_main_init()
@@ -287,21 +291,21 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
     case gecko_evt_mesh_node_initialized_id:
     	LOG_INFO("evt::gecko_evt_mesh_node_initialized_id");
-    	struct gecko_msg_mesh_vendor_model_init_rsp_t* vendor_init_response;
-    	uint8_t op_cd[1] = {1};
-    	vendor_init_response = gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0001, false, 1, op_cd);
-    	if(vendor_init_response->result != 0)
-    	{
-    		LOG_ERROR("0001 vendor model init failed with %d response",vendor_init_response->result);
-    	}
-    	LOG_INFO("Vendor model init success");
-    	uint8_t op_cd1[1] = {1};
-    	vendor_init_response = gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0002, false, 1, op_cd1);
-    	if(vendor_init_response->result != 0)
-    	{
-    		LOG_ERROR("0002 vendor model init failed with %d response",vendor_init_response->result);
-    	}
-    	LOG_INFO("Vendor model init success");
+//    	struct gecko_msg_mesh_vendor_model_init_rsp_t* vendor_init_response;
+//    	uint8_t op_cd[1] = {1};
+//    	vendor_init_response = gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0001, false, 1, op_cd);
+//    	if(vendor_init_response->result != 0)
+//    	{
+//    		LOG_ERROR("0001 vendor model init failed with %d response",vendor_init_response->result);
+//    	}
+//    	LOG_INFO("Vendor model init success");
+//    	uint8_t op_cd1[1] = {1};
+//    	vendor_init_response = gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0002, false, 1, op_cd1);
+//    	if(vendor_init_response->result != 0)
+//    	{
+//    		LOG_ERROR("0002 vendor model init failed with %d response",vendor_init_response->result);
+//    	}
+//    	LOG_INFO("Vendor model init success");
 
     	if (!evt->data.evt_mesh_node_initialized.provisioned) {
     		displayPrintf(DISPLAY_ROW_ACTION,"Unprovisioned");
@@ -372,6 +376,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     case gecko_evt_gatt_server_user_write_request_id:
     	LOG_INFO("evt::gecko_evt_gatt_server_user_write_request_id");
       if (evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_ota_control) {
+    	  LOG_INFO("OTA control");
         /* Set flag to enter to OTA mode */
         boot_to_dfu = 1;
         /* Send response to Write Request */
@@ -437,10 +442,14 @@ void data_subscriber_init()
 
 void init_all_models()
 {
-	errorcode_t mesh_reg_response = mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-																			 0,
-																			 onoff_request,
-																			 NULL);
+//	errorcode_t mesh_reg_response = mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+//																			 0,
+//																			 onoff_request,
+//																			 NULL);
+	errorcode_t mesh_reg_response = mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
+																				 0,
+																				 onoff_request,
+																				 NULL);
 	if(mesh_reg_response != 0)
 	{
 		LOG_ERROR("Handler register failed with %d response",mesh_reg_response);
@@ -449,11 +458,29 @@ void init_all_models()
 
 void onoff_publish()
 {
-	errorcode_t error = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-	                                        			0,
-														mesh_generic_state_on_off);
+//	errorcode_t error = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+//	                                        			0,
+//														mesh_generic_state_on_off);
+//	errorcode_t error = onoff_update(0);
+	errorcode_t error = mesh_lib_generic_server_publish(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
+		                                        			0,
+															mesh_generic_state_level);
 	if(error != 0)
 	{
 		LOG_ERROR("Server publish failed with %x response",error);
 	}
+}
+
+errorcode_t onoff_update(uint16_t element_index)
+{
+  struct mesh_generic_state current, target;
+
+  current.kind = mesh_lighting_state_ctl_temperature;
+  target.kind = mesh_lighting_state_ctl_temperature;
+
+  return mesh_lib_generic_server_update(MESH_LIGHTING_LIGHTNESS_SERVER_MODEL_ID,
+                                        element_index,
+                                        &current,
+                                        &target,
+                                        0);
 }

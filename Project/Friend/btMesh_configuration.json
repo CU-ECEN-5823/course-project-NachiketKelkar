@@ -10,20 +10,20 @@
       {
         "Name": "Primary Element",
         "Loc": "0x0000",
-        "NumS": "2",
-        "NumV": "2",
+        "NumS": "4",
+        "NumV": "0",
         "SIG Models": [
           "0x0000",
           "Configuration Server",
+          "0x100E",
+          "Generic Location Server",
           "0x1000",
-          "Generic OnOff Server"]
+          "Generic OnOff Server",
+          "0x1002",
+          "Generic Level Server"]
         ,
         "Vendor Models": [
-          "0x000102FF",
-          "SENSOR_MODEL_1",
-          "0x000202FF",
-          "SENSOR_MODEL_2"]
-        
+          ]
       }]
     
   },
