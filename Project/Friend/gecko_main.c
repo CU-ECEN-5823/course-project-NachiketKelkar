@@ -207,7 +207,7 @@ void gecko_bgapi_classes_init_client_lpn(void)
 /*
  * Function name: onoff_request()
  * Description: This function is called when the request is received from the client
- * parameters: This function is called back fuction where bluetooth stack passes all parameters
+ * parameters: This function is called back function where bluetooth stack passes all parameters
  * return: void*/
 void onoff_request(uint16_t model_id,
         		   uint16_t element_index,
@@ -311,7 +311,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	break;
 
     case gecko_evt_hardware_soft_timer_id:
-    	LOG_INFO("evt::gecko_evt_hardware_soft_timer_id");
+//    	LOG_INFO("evt::gecko_evt_hardware_soft_timer_id");
     	switch(evt->data.evt_hardware_soft_timer.handle)
     	{
     	case TIMER_FACTORY_RESET:
@@ -319,7 +319,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     		break;
     	case TIMER_SENSOR_READINGS:
     		human_presence = is_human_present();
-    		LOG_INFO("Is human present %d",human_presence);
+    		displayPrintf(DISPLAY_ROW_CLIENTADDR,"Human - %d",human_presence);
     		break;
     	}
     	break;
