@@ -48,12 +48,15 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "src/display.h"
 #include "src/gpio.h"
 #include "src/log.h"
 #include "mesh_generic_model_capi_types.h"
 #include "mesh_lighting_model_capi_types.h"
 #include "mesh_lib.h"
+#include "src/gecko_ble_errors.h"
+#include "src/sensor.h"
 /***********************************************************************************************//**
  * @addtogroup Application
  * @{
@@ -119,16 +122,23 @@ bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
 char device_name[15];
 uint16_t result;
 uint16_t primary_elem_addr;
+bool human_presence;
+uint64_t total_time;
+uint64_t occupied_time;
+
 
 /* Project defines */
-#define TIMER_FACTORY_RESET 200
+#define TIMER_FACTORY_RESET   200
+#define TIMER_SENSOR_READINGS 201
 
 
 /* Function declarations */
 void data_subscriber_init();
 void init_all_models();
-void onoff_publish();
-errorcode_t onoff_update(uint16_t element_index);
+void server_publish();
+//errorcode_t onoff_update(uint16_t element_index);
+
+int devices = 0;
 /**
  * See light switch app.c file definition
  */
@@ -210,8 +220,17 @@ void onoff_request(uint16_t model_id,
 				   uint8_t request_flags)
 {
 //	LOG_INFO("LOC is %d - %d - %d",request->location_global.lat,request->location_global.lon,request->location_global.alt);
+	LOG_INFO("Client address is %d",client_addr);
 	LOG_INFO("Onoff request received");
-	LOG_INFO("%d",request->level);
+	if(request->kind == mesh_generic_request_on_off)
+	{
+		LOG_INFO("%d",request->on_off);
+	}
+	else
+	{
+		LOG_INFO("%d",request->level);
+	}
+
 //	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
 //	{
 //		displayPrintf(DISPLAY_ROW_TEMPVALUE,"Button Pressed");
@@ -261,24 +280,35 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	displayPrintf(DISPLAY_ROW_BTADDR,device_name);
     	if(GPIO_PinInGet(BUTTON0_PORT, BUTTON0_PIN) == 0 || GPIO_PinInGet(BUTTON1_PORT, BUTTON1_PIN) == 0)
     	{
-    		displayPrintf(DISPLAY_ROW_ACTION - 1, "***********");
+    		displayPrintf(DISPLAY_ROW_ACTION - 1, "***************");
     		displayPrintf(DISPLAY_ROW_ACTION, "Factory Reset");
-    		displayPrintf(DISPLAY_ROW_ACTION + 1, "***********");
-    		result = gecko_cmd_flash_ps_erase_all()->result;
-    			if(result) LOG_ERROR("Flash erase failed");
-    		result = gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_FACTORY_RESET, 1)->result;
-    			if(result) LOG_ERROR("Timer set failed");
+    		displayPrintf(DISPLAY_ROW_ACTION + 1, "***************");
+    		BTSTACK_CHECK_RESPONSE(gecko_cmd_flash_ps_erase_all());
+			BTSTACK_CHECK_RESPONSE(gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_FACTORY_RESET, 1));
     	}
     	else
     	{
-    		result = gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, strlen(device_name), (uint8_t *)device_name)->result;
-    		if(result) LOG_ERROR("Write attribute failed");
+    		BTSTACK_CHECK_RESPONSE(gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name, 0, strlen(device_name), (uint8_t *)device_name));
     		// Initialize Mesh stack in Node operation mode, wait for initialized event
-    		result = gecko_cmd_mesh_node_init()->result;
-    		if(result) LOG_ERROR("Mesh node init failed");
+    		BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_node_init());
+//    		result = gecko_cmd_mesh_node_init_oob(0, 2, 3, 4, 2, 4, 1)->result;
+//    		if(result) LOG_ERROR("Mesh node init failed with %d",result);
     	}
       break;
 
+    case gecko_evt_mesh_node_display_output_oob_id:
+    	LOG_INFO("evt::gecko_evt_mesh_node_display_output_oob_id");
+    	LOG_INFO("%d",evt->data.evt_mesh_node_display_output_oob.data);
+    	LOG_INFO("%d",evt->data.evt_mesh_node_display_output_oob.output_size);
+    	break;
+
+    case gecko_evt_mesh_node_static_oob_request_id:
+    	LOG_INFO("evt::gecko_evt_mesh_node_static_oob_request_id");
+    	uint8 oob_resp_data[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5};
+    	uint16_t result = gecko_cmd_mesh_node_static_oob_request_rsp(sizeof(oob_resp_data),oob_resp_data)->result;
+    	if(result!=0) LOG_ERROR("Sending static data failed %d",result);
+
+    	break;
 
     case gecko_evt_hardware_soft_timer_id:
     	LOG_INFO("evt::gecko_evt_hardware_soft_timer_id");
@@ -286,27 +316,20 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	{
     	case TIMER_FACTORY_RESET:
     		gecko_cmd_system_reset(0);
+    		break;
+    	case TIMER_SENSOR_READINGS:
+    		human_presence = is_human_present();
+    		LOG_INFO("Is human present %d",human_presence);
+    		break;
     	}
     	break;
 
     case gecko_evt_mesh_node_initialized_id:
     	LOG_INFO("evt::gecko_evt_mesh_node_initialized_id");
-//    	struct gecko_msg_mesh_vendor_model_init_rsp_t* vendor_init_response;
 //    	uint8_t op_cd[1] = {1};
-//    	vendor_init_response = gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0001, false, 1, op_cd);
-//    	if(vendor_init_response->result != 0)
-//    	{
-//    		LOG_ERROR("0001 vendor model init failed with %d response",vendor_init_response->result);
-//    	}
-//    	LOG_INFO("Vendor model init success");
+//    	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0001, false, 1, op_cd));
 //    	uint8_t op_cd1[1] = {1};
-//    	vendor_init_response = gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0002, false, 1, op_cd1);
-//    	if(vendor_init_response->result != 0)
-//    	{
-//    		LOG_ERROR("0002 vendor model init failed with %d response",vendor_init_response->result);
-//    	}
-//    	LOG_INFO("Vendor model init success");
-
+//    	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_vendor_model_init(0, 0x02ff, 0x0002, false, 1, op_cd1));
     	if (!evt->data.evt_mesh_node_initialized.provisioned) {
     		displayPrintf(DISPLAY_ROW_ACTION,"Unprovisioned");
     		// The Node is now initialized, start unprovisioned Beaconing using PB-ADV and PB-GATT Bearers
@@ -316,6 +339,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	{
     		primary_elem_addr = evt->data.evt_mesh_node_initialized.address;
     		LOG_INFO("Node is provisioned with %x address and %ld ivi",primary_elem_addr,evt->data.evt_mesh_node_initialized.ivi);
+    		BTSTACK_CHECK_RESPONSE(gecko_cmd_hardware_set_soft_timer(1 * 32768, TIMER_SENSOR_READINGS, 0));
     		data_subscriber_init();
     	}
     	break;
@@ -339,15 +363,13 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     case gecko_evt_mesh_node_provisioned_id:
     	LOG_INFO("evt::gecko_evt_mesh_node_provisioned_id");
     	displayPrintf(DISPLAY_ROW_ACTION, "Provisioned");
-//    	displayPrintf(DISPLAY_ROW_PASSKEY,"Reset in 20 Sec");
-//    	result = gecko_cmd_hardware_set_soft_timer(20 * 32768, TIMER_FACTORY_RESET, 1)->result;
-//    	if(result) LOG_INFO("Reset failed\n\r");
     	break;
 
     case gecko_evt_mesh_node_provisioning_failed_id:
     	LOG_INFO("evt::gecko_evt_mesh_node_provisioning_failed_id");
     	displayPrintf(DISPLAY_ROW_ACTION, "Provisioning Failed");
-    	gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_FACTORY_RESET, 1);
+//    	gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_FACTORY_RESET, 1);
+    	BTSTACK_CHECK_RESPONSE(gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_FACTORY_RESET, 1));
     	break;
 
     case gecko_evt_le_connection_opened_id:
@@ -391,15 +413,17 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
       break;
 
     case gecko_evt_mesh_friend_friendship_established_id:
+    	devices ++;
     	LOG_INFO("evt::gecko_evt_mesh_friend_friendship_established_id");
     	LOG_INFO("lpn_address=%x", evt->data.evt_mesh_friend_friendship_established.lpn_address);
-    	displayPrintf(DISPLAY_ROW_TEMPVALUE,"FRIEND");
+    	displayPrintf(DISPLAY_ROW_TEMPVALUE,"LPN count - %d",devices);
     	break;
 
     case gecko_evt_mesh_friend_friendship_terminated_id:
+    	devices --;
     	LOG_INFO("evt::gecko_evt_mesh_friend_friendship_terminated_id");
     	LOG_INFO("reason=%x", evt->data.evt_mesh_friend_friendship_terminated.reason);
-    	displayPrintf(DISPLAY_ROW_TEMPVALUE,"NO LPN");
+    	displayPrintf(DISPLAY_ROW_TEMPVALUE,"LPN count - %d",devices);
     	break;
 
     case gecko_evt_system_external_signal_id:
@@ -416,12 +440,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 void data_subscriber_init()
 {
 	/* Initialize the server */
-	struct gecko_msg_mesh_generic_server_init_rsp_t* res = gecko_cmd_mesh_generic_server_init();
-	if(res->result != 0)
-	{
-		LOG_ERROR("Server init failed with %d response",res);
-	}
-
+	BTSTACK_CHECK_RESPONSE(gecko_cmd_mesh_generic_server_init());
 	result = mesh_lib_init(malloc, free, 9);
 	if(result != 0)
 	{
@@ -433,54 +452,42 @@ void data_subscriber_init()
 	struct gecko_msg_mesh_friend_init_rsp_t* res1 = gecko_cmd_mesh_friend_init();
 	if(res1->result != 0)
 	{
-		LOG_ERROR("Friend init failed with %d response",res);
+		LOG_ERROR("Friend init failed with %d response",res1->result);
 	}
-
+	else
+	{
+		displayPrintf(DISPLAY_ROW_TEMPVALUE,"LPN count - %d",devices);
+	}
 	init_all_models();
-	onoff_publish();
+	server_publish();
 }
+
 
 void init_all_models()
 {
-//	errorcode_t mesh_reg_response = mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-//																			 0,
-//																			 onoff_request,
-//																			 NULL);
-	errorcode_t mesh_reg_response = mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
-																				 0,
-																				 onoff_request,
-																				 NULL);
+	errorcode_t mesh_reg_response = mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID, 0, onoff_request, NULL);
+	if(mesh_reg_response != 0)
+	{
+		LOG_ERROR("Handler register failed with %d response",mesh_reg_response);
+	}
+	mesh_reg_response = mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID, 0, onoff_request, NULL);
 	if(mesh_reg_response != 0)
 	{
 		LOG_ERROR("Handler register failed with %d response",mesh_reg_response);
 	}
 }
 
-void onoff_publish()
+
+void server_publish()
 {
-//	errorcode_t error = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-//	                                        			0,
-//														mesh_generic_state_on_off);
-//	errorcode_t error = onoff_update(0);
-	errorcode_t error = mesh_lib_generic_server_publish(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
-		                                        			0,
-															mesh_generic_state_level);
+	errorcode_t error = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID, 0, mesh_generic_state_on_off);
 	if(error != 0)
 	{
 		LOG_ERROR("Server publish failed with %x response",error);
 	}
-}
-
-errorcode_t onoff_update(uint16_t element_index)
-{
-  struct mesh_generic_state current, target;
-
-  current.kind = mesh_lighting_state_ctl_temperature;
-  target.kind = mesh_lighting_state_ctl_temperature;
-
-  return mesh_lib_generic_server_update(MESH_LIGHTING_LIGHTNESS_SERVER_MODEL_ID,
-                                        element_index,
-                                        &current,
-                                        &target,
-                                        0);
+	error = mesh_lib_generic_server_publish(MESH_GENERIC_LEVEL_SERVER_MODEL_ID, 0, mesh_generic_state_level);
+	if(error != 0)
+	{
+		LOG_ERROR("Server publish failed with %x response",error);
+	}
 }

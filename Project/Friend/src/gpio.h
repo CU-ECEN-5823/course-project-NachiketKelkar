@@ -22,6 +22,7 @@ void gpioSetDisplayExtcomin(bool high);
 #define BUTTON1_PORT 		gpioPortF
 #define BUTTON1_PIN 		7
 
+/* Additional macros for user friendly calling of function */
 #define LCD_ENABLE            GPIO_PinOutSet(gpioPortD, 15)
 #define LCD_DISABLE           GPIO_PinOutClear(gpioPortD, 15)
 #define DISPLAY_EXTCOMIN_HIGH GPIO_PinOutSet(gpioPortD, 13)

@@ -14,6 +14,7 @@
 #include "gpio.h"
 #include "letimer.h"
 #include "gpiointerrupt.h"
+#include "sensor.h"
 
 extern void gecko_main_init();
 bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
@@ -33,6 +34,9 @@ int main(void)
 	logInit();
 	displayInit();
 	gpioEnableDisplay();
+	init_human_presence_sensors();
+
+	LOG_INFO("started");
 
   /* Infinite loop */
   while (1) {
@@ -50,6 +54,7 @@ void LETIMER0_IRQHandler()
 	volatile uint32_t interrupt_val;
 	interrupt_val = LETIMER_IntGetEnabled(LETIMER0);
 	LETIMER_IntClear(LETIMER0, interrupt_val);
+//	LOG_INFO("x = %d",get_adc_data());
 	if((interrupt_val & 0x04) == 0x04)
 	{
 		no_of_overflows ++;

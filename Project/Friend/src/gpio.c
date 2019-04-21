@@ -7,6 +7,7 @@
 #include "gpio.h"
 #include "em_gpio.h"
 #include <string.h>
+#include "log.h"
 
 
 #define	LED0_port gpioPortF
@@ -67,11 +68,11 @@ void gpioSetDisplayExtcomin(bool high)
 	if(high == true)
 	{
 		DISPLAY_EXTCOMIN_LOW;
-		//LOG_INFO("In if");
+//		LOG_INFO("In if");
 	}
 	else
 	{
 		DISPLAY_EXTCOMIN_HIGH;
-		//LOG_INFO("In else");
+//		LOG_INFO("In else");
 	}
 }
