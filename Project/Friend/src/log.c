@@ -8,6 +8,9 @@
 #include "retargetserial.h"
 #include "log.h"
 #include <stdbool.h>
+#include "main.h"
+
+extern uint32_t no_of_overflows;
 
 #if INCLUDE_LOGGING
 /**
@@ -17,7 +20,10 @@
 uint32_t loggerGetTimestamp(void)
 {
 	//return timerGetRunTimeMilliseconds();
-	return 0;
+	uint32_t time_stamp;
+	time_stamp = PERIOD_IN_MSEC * (no_of_overflows + 1);
+	time_stamp -= LETIMER0->CNT;
+	return time_stamp;
 }
 
 /**

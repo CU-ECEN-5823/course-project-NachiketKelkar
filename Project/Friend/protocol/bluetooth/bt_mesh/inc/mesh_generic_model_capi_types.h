@@ -37,7 +37,7 @@ typedef enum {
 /** Generic on/off server */
 #define MESH_GENERIC_ON_OFF_SERVER_MODEL_ID       0x1000
 /** Generic on/off client */
-#define MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID       0x1001
+#define MESH_GENERIC_ON_OFF_CLIbENT_MODEL_ID       0x1001
 
 /** Generic level server */
 #define MESH_GENERIC_LEVEL_SERVER_MODEL_ID        0x1002
