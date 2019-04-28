@@ -35,7 +35,7 @@
 #include "em_emu.h"
 #include "em_cmu.h"
 #include <em_gpio.h>
-
+#include <em_core.h>
 /* Device initialization header */
 #include "hal-config.h"
 
@@ -270,19 +270,18 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	}
       break;
 
-    case gecko_evt_mesh_node_display_output_oob_id:
-    	LOG_INFO("evt::gecko_evt_mesh_node_display_output_oob_id");
-    	LOG_INFO("%d",evt->data.evt_mesh_node_display_output_oob.data);
-    	LOG_INFO("%d",evt->data.evt_mesh_node_display_output_oob.output_size);
-    	break;
-
-    case gecko_evt_mesh_node_static_oob_request_id:
-    	LOG_INFO("evt::gecko_evt_mesh_node_static_oob_request_id");
-    	uint8 oob_resp_data[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5};
-    	uint16_t result = gecko_cmd_mesh_node_static_oob_request_rsp(sizeof(oob_resp_data),oob_resp_data)->result;
-    	if(result!=0) LOG_ERROR("Sending static data failed %d",result);
-
-    	break;
+//    case gecko_evt_mesh_node_display_output_oob_id:
+//    	LOG_INFO("evt::gecko_evt_mesh_node_display_output_oob_id");
+//    	LOG_INFO("%d",evt->data.evt_mesh_node_display_output_oob.data);
+//    	LOG_INFO("%d",evt->data.evt_mesh_node_display_output_oob.output_size);
+//    	break;
+//
+//    case gecko_evt_mesh_node_static_oob_request_id:
+//    	LOG_INFO("evt::gecko_evt_mesh_node_static_oob_request_id");
+//    	uint8 oob_resp_data[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5};
+//    	uint16_t result = gecko_cmd_mesh_node_static_oob_request_rsp(sizeof(oob_resp_data),oob_resp_data)->result;
+//    	if(result!=0) LOG_ERROR("Sending static data failed %d",result);
+//    	break;
 
     case gecko_evt_hardware_soft_timer_id:
     	LOG_INFO("evt::gecko_evt_hardware_soft_timer_id");
@@ -491,24 +490,20 @@ void server_publish()
 void handle_external_events(uint32_t external_events)
 {
 	uint32_t sound_data;
+	CORE_DECLARE_IRQ_STATE;
 	if((external_events & DISPLAY_UPDATE) == DISPLAY_UPDATE)
 	{
+		CORE_ENTER_CRITICAL();
 		external_evt &= ~DISPLAY_UPDATE;
+		CORE_EXIT_CRITICAL();
 		total_time ++;
 		no_of_overflows ++;
 		displayUpdate();
 	}
 	if((external_events & MOTION_RAISING) == MOTION_RAISING)
 	{
-//		LOG_INFO("In motion rising");
 		SOUND_SENSOR_ENABLE;
 		sound_data  = get_sound_data();
-//		displayPrintf(DISPLAY_ROW_BTADDR,"Utlzt - %d",(uint8_t)get_occupancy(occupied_time, total_time));
-//		LOG_INFO("Sound data is %d",sound_data);
-//		LOG_INFO("---------------> total_time is %d",total_time);
-//		LOG_INFO("---------------> occupied_time is %d",occupied_time);
-//		LOG_INFO("---------------> occupancy is %f",get_occupancy(occupied_time,total_time));
-//		LOG_INFO("---------------> occupancy is %d",(uint8_t)get_occupancy(occupied_time,total_time));
 		if(sound_data > SOUND_THRESHOLD)
 		{
 			occupied_time ++;
@@ -516,9 +511,10 @@ void handle_external_events(uint32_t external_events)
 	}
 	if((external_events & MOTION_FALLING) == MOTION_FALLING)
 	{
-//		LOG_INFO("In motion falling");
+		CORE_ENTER_CRITICAL();
 		external_evt &= ~MOTION_RAISING;
 		external_evt &= ~MOTION_FALLING;
+		CORE_EXIT_CRITICAL();
 		SOUND_SENSOR_DISABLE;
 	}
 }

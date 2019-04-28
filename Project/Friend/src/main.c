@@ -16,6 +16,7 @@
 #include "gpiointerrupt.h"
 #include "sensor.h"
 #include "main.h"
+#include <em_core.h>
 
 extern void gecko_main_init();
 bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
@@ -56,9 +57,12 @@ void LETIMER0_IRQHandler()
 	volatile uint32_t interrupt_val;
 	interrupt_val = LETIMER_IntGetEnabled(LETIMER0);
 	LETIMER_IntClear(LETIMER0, interrupt_val);
+	CORE_DECLARE_IRQ_STATE;
 	if((interrupt_val & 0x04) == 0x04)
 	{
+		CORE_ENTER_CRITICAL();
 		external_evt |= DISPLAY_UPDATE;
+		CORE_EXIT_CRITICAL();
 		gecko_external_signal(external_evt);
 	}
 }

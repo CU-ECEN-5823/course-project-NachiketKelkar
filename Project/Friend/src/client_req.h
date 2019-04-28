@@ -13,7 +13,7 @@
 #include "mesh_generic_model_capi_types.h"
 
 #define HUMIDIFIER_THRESHOLD   123
-#define DEHUMIDIFIER_THRESHOLD 100
+#define DEHUMIDIFIER_THRESHOLD 150
 #define AIR_QUALITY_LOW        600
 #define AIR_QUALITY_HIGH       900
 #define LUX_LOW                300
