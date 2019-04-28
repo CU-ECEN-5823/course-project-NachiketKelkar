@@ -11,7 +11,9 @@
 #include <stdbool.h>
 
 #define MOTION_DETECTED 1
-#define SOUND_THRESHOLD 28
+#define SOUND_THRESHOLD 25
+
+#define START_CONVERSION ADC_Start(ADC0, adcStartSingle);
 
 /*
  * Function    : motion_sensor_init
@@ -28,7 +30,7 @@ void motion_sensor_init();
  * @param      : void
  * @return     : int(the pin value)
  */
-int motion_sensor_data();
+//int motion_sensor_data();
 
 
 /*
@@ -67,7 +69,7 @@ void init_human_presence_sensors();
  * @param      : void
  * @return     : bool (true if human is present and false if human is not present)
  */
-bool is_human_present();
+//bool is_human_present();
 
 
 /*

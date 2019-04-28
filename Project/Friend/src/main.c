@@ -15,13 +15,15 @@
 #include "letimer.h"
 #include "gpiointerrupt.h"
 #include "sensor.h"
+#include "main.h"
 
 extern void gecko_main_init();
 bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
 extern void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt);
 
 bool display_update;
-uint32_t no_of_overflows = 0;
+//uint32_t no_of_overflows = 0;
+uint32_t external_evt;
 
 int main(void)
 {
@@ -33,10 +35,10 @@ int main(void)
 	gpioInit();
 	logInit();
 	displayInit();
-	gpioEnableDisplay();
 	init_human_presence_sensors();
-
+	SOUND_SENSOR_SETUP;
 	LOG_INFO("started");
+
 
   /* Infinite loop */
   while (1) {
@@ -54,10 +56,9 @@ void LETIMER0_IRQHandler()
 	volatile uint32_t interrupt_val;
 	interrupt_val = LETIMER_IntGetEnabled(LETIMER0);
 	LETIMER_IntClear(LETIMER0, interrupt_val);
-//	LOG_INFO("x = %d",get_adc_data());
 	if((interrupt_val & 0x04) == 0x04)
 	{
-		no_of_overflows ++;
-		display_update = displayUpdate();
+		external_evt |= DISPLAY_UPDATE;
+		gecko_external_signal(external_evt);
 	}
 }

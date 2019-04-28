@@ -8,12 +8,17 @@
 #include "em_gpio.h"
 #include <string.h>
 #include "log.h"
+#include "main.h"
+#include "native_gecko.h"
+#include "sensor.h"
 
 
 #define	LED0_port gpioPortF
 #define LED0_pin	4
 #define LED1_port gpioPortF
 #define LED1_pin 5
+
+extern uint32_t external_evt;
 
 void gpioInit()
 {
@@ -75,4 +80,21 @@ void gpioSetDisplayExtcomin(bool high)
 		DISPLAY_EXTCOMIN_HIGH;
 //		LOG_INFO("In else");
 	}
+}
+
+
+void MotionDetected()
+{
+	if(GPIO_PinInGet(gpioPortC, 11) == 1)
+	{
+		//GPIO pin high to turn ON the sensor
+//		LOG_INFO("Motion detected");
+		external_evt = external_evt | MOTION_RAISING;
+	}
+	else if(GPIO_PinInGet(gpioPortC, 11) == 0)
+	{
+//		LOG_INFO("Motion detection end");
+		external_evt = external_evt | MOTION_FALLING;
+	}
+	gecko_external_signal(external_evt);
 }
