@@ -26,14 +26,6 @@ void motion_sensor_init()
 	GPIOINT_CallbackRegister(11, MotionDetected);
 }
 
-
-//int motion_sensor_data()
-//{
-//	/* Return the value on port C pin 11 */
-//	return GPIO_PinInGet(MOTION_PORT, MOTION_PIN);
-//}
-
-
 void sound_sensor_init()
 {
 	// Enable ADC0 clock
@@ -68,29 +60,7 @@ void init_human_presence_sensors()
 }
 
 
-//bool is_human_present()
-//{
-//	uint32_t sound_data;
-//	int motion_data;
-//	bool human_present = false;
-//	motion_data = motion_sensor_data();
-////	LOG_INFO("Motion data is %d",motion_data);
-//	sound_data  = get_sound_data();
-////	LOG_INFO("Sound data is %d",sound_data);
-//	if(motion_data == MOTION_DETECTED && sound_data > SOUND_THRESHOLD)
-//	{
-//		human_present = true;
-//	}
-////	LOG_INFO("Is human present %d",human_present);
-//	return human_present;
-//}
-
-
 float get_occupancy(uint64_t occupied_time, uint64_t total_time)
 {
-//	LOG_INFO("Occupied time = %d",occupied_time);
-//	LOG_INFO("Total time = %d",total_time);
-//	LOG_INFO("Occupied time * 100 = %d",occupied_time*100);
-//	LOG_INFO("Occupied time *100/total time = %d",(occupied_time*100)/total_time);
 	return ((occupied_time* 100) / total_time);
 }

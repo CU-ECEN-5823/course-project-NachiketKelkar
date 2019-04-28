@@ -25,15 +25,6 @@ void motion_sensor_init();
 
 
 /*
- * Function    : motion_sensor_data
- * Description : Get the data from the motion sensor if it has detected motion.
- * @param      : void
- * @return     : int(the pin value)
- */
-//int motion_sensor_data();
-
-
-/*
  * Function    : sound_sensor_init
  * Description : Initializing the ADC0 port1x channel 16 to get the audio data
  *               from the sound sensor.
@@ -59,17 +50,6 @@ uint32_t get_sound_data();
  * @return     : void
  */
 void init_human_presence_sensors();
-
-
-/*
- * Function    : is_human_present
- * Description : This function gets the data from motion and sound sensor and
- *               decides if it has detected the human and return true if the
- *               motion and sound is present indicating that the human is present.
- * @param      : void
- * @return     : bool (true if human is present and false if human is not present)
- */
-//bool is_human_present();
 
 
 /*

@@ -29,12 +29,6 @@ void onoff_request(uint16_t model_id,
 	LOG_INFO("request_on_off - %d",request->on_off);
 	LOG_INFO("transition_ms = %d",transition_ms);
 
-
-	/********************** Delete this ***********************/
-	// Request flag is used to identify which node has sent the data in our case
-	// Puneet will send 1 in request flag
-	// Tanmay will send 2 in request flag
-	/*********************************************************/
 	switch(client_addr)
 	{
 	case 1:
@@ -131,11 +125,6 @@ void update_level_state(uint8_t source, int16_t level)
 //	LOG_INFO("Level update state");
 	switch(source)
 	{
-	/********************** Delete this ***********************/
-	// Delay ms will indicate which sensor data is sent
-	// 1 is sent for humidity data
-	// 2 is sent for air quality index
-	/*********************************************************/
 	case 1:
 		if(is_humidity == 1)
 		{
@@ -148,10 +137,6 @@ void update_level_state(uint8_t source, int16_t level)
 			actuation_states(air_quality, level);
 		}
 		break;
-	/********************** Delete this ***********************/
-	// Delay ms will indicate which sensor data is sent
-	// 1 is sent for lux data
-	/*********************************************************/
 	case 2:
 		displayPrintf(DISPLAY_ROW_CONNECTION,"Lux - %d",level);
 		actuation_states(lux, level);
