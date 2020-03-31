@@ -31,3 +31,13 @@ Below is an overview of the sequence used to generate this repository:
 * Group project documents: https://drive.google.com/drive/u/1/folders/19pP2BnPFkOunKWceiNoMzz06ycwfbmVY
 * Individual project documents(Nachiket): https://drive.google.com/drive/u/1/folders/1XefLhQ-oaW7LvgSsHN2dp4qmauuXOWxK
 * Provisioner code: https://github.com/CU-ECEN-5823/project-provisioner-NachiketKelkar
+
+
+## Final Project Update
+* The interrupt based motion sensor was implemented.
+* The load power management is done by switcing off the sound detector sensor when not in use to reduce the power consumption.
+* The no of rows supported by the LCD was increased to display the actuation messages.
+* The actuation message is displayed based on the data and the threshold.
+* Group project documents: https://drive.google.com/drive/u/1/folders/19pP2BnPFkOunKWceiNoMzz06ycwfbmVY
+* Individual project documents(Nachiket): https://drive.google.com/drive/u/1/folders/1XefLhQ-oaW7LvgSsHN2dp4qmauuXOWxK
+* Provisioner code: https://github.com/CU-ECEN-5823/project-provisioner-NachiketKelkar
